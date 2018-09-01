@@ -1,4 +1,7 @@
+clear all
+close all
 clc
+
 %% Changelog
 % v2.01 - Made zeroFinder more efficient / compact
 % v2.02 - Making hiddenMap & createMap more compact
@@ -6,6 +9,7 @@ clc
 % v2.04 - Making MatchLoop a function
 % v2.05 - Making MatchLoop a function that can call bots
 % v2.06 - BugFIX - Fixed infinite recursion & logic in zeroFinder
+% v2.07 - BugFIX - Major fix in oneTurn + updating graphs
 
 %% Game Information
 % 0  = Empty Area
@@ -22,58 +26,69 @@ clc
 % could get stuck in infinite loop [ctrl-c @command window]
 
 numberOfMatches = 100;               % Best of 'Odd numberOfMatches'
-results = zeros(4,numberOfMatches); % Final results
+results = zeros(6,numberOfMatches); % Final results
 height  = 10;                       % variable parameter
 width   = 10;                       % variable parameter
 diff    = 0.2;                      % portion of area that are mines
-matchTime = 2;                      % Single match duration [sec]
+matchTime = 20;                      % Single match duration [sec]
+bot1Name = 'bot_Chitii_03';
+bot2Name = 'bot_KJ_v0_04_Discoverer';
 
 %Graph Parameters
 match = 1:numberOfMatches;
-subplot(2,1,1);
+
+subplot(3,1,1);
 plotMines = plot(match , results(1,:) , match , results(2,:));
 title('Number of mines found in each match');
 legend({bot1Name,bot2Name}, 'Interpreter', 'none');
-subplot(2,1,2);
-plotAvgMines = plot(match , results(3,:) , match , results(4,:));
+
+subplot(3,1,2);
+plotTurns = plot(match , results(3,:) , match , results(4,:));
+title('Number of Turns in match');
+legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+
+axAvgMines = subplot(3,1,3);
+plotAvgMines = plot(match , results(5,:) , match , results(6,:));
 title('Average number of mines per turn bots found in each match');
-res_avg_bot_1 = sum(results(3,:))/numberOfMatches;
-res_avg_bot_2 = sum(results(4,:))/numberOfMatches;
-str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
-str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
-legend({str_bot_1,str_bot_2}, 'Interpreter', 'none');
+
+%Test Animated Line
+figure
+aniPlotMines(1) = animatedline('Color','red');
+aniPlotMines(2) = animatedline('Color','blue');
+legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+title('Number of mines Found in each Match');
+% axis([0,numberOfMatches, 0, (height+numberOfMatches)*(width+numberOfMatches)*diff/2])
+% aniPlotAvgMines = animatedline;
+% axis([0,numberOfMatches, 0, 0.01])
     
 for gamesPlayed = 1:numberOfMatches
     %% Game parameters
-    height    = height + 1                     %variable parameter
+    height    = height + 1;                     %variable parameter
     width     = width + 1;                      %variable parameter
-    bot1Name = 'bot_Chitii_02';
-    bot2Name = 'bot_KJ_v0_03_Discoverer';
-    
-    results (:,gamesPlayed) = engine(height, width, diff, matchTime, bot1Name, bot2Name);
+    results (:,gamesPlayed) = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name);
         
-    
     %% The results
+    for player = 1:numel(plotMines)
+        set(plotMines(player), 'YData', results(player, :))
+        set(plotTurns(player), 'YData', results(player+2, :))
+        set(plotAvgMines(player), 'YData', results(player+4, :))
+        
+        addpoints(aniPlotMines(player), gamesPlayed, results(player, gamesPlayed))
+    end
     
-    
-    
-    plotMines = plot(match , results(1,:) , match , results(2,:));
-    plotAvgMines = plot(match , results(3,:) , match , results(4,:));
-    
-    res_avg_bot_1 = sum(results(3,:))/numberOfMatches;
-    res_avg_bot_2 = sum(results(4,:))/numberOfMatches;
+    %Maybe make a running average in the chart (put this in chart, but this slows stuff down
+    res_avg_bot_1 = sum(results(5,:))/gamesPlayed;
+    res_avg_bot_2 = sum(results(6,:))/gamesPlayed;
     str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
     str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
-    legend({str_bot_1,str_bot_2}, 'Interpreter', 'none');
-    
+    legend(axAvgMines, {str_bot_1,str_bot_2}, 'Interpreter', 'none');
+
     refreshdata
     drawnow
 end
 
-
-
 %% Functions for the game
-function results = engine(height, width, diff, matchTime, bot1Name, bot2Name)
+function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name)
     mines     = floor(diff*height*width);    
     fullMap   = createMap(height , width, mines);% Open this for God Eye's View
     gameMap   = hiddenMap(height , width);
@@ -95,7 +110,6 @@ function results = engine(height, width, diff, matchTime, bot1Name, bot2Name)
                 winner = 1;
                 break
             end
-            
             [x,y] = executeStrAsFun(bot1Name, gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_1_turnCount = bot_1_turnCount + 1;
@@ -125,8 +139,10 @@ function results = engine(height, width, diff, matchTime, bot1Name, bot2Name)
     % gameMap
     results(1) = bot_1_score;
     results(2) = bot_2_score;
-    results(3) = bot_1_score / bot_1_turnCount;
-    results(4) = bot_2_score / bot_2_turnCount;
+    results(3) = bot_1_turnCount;
+    results(4) = bot_2_turnCount;
+    results(5) = bot_1_score / bot_1_turnCount;
+    results(6) = bot_2_score / bot_2_turnCount;
 end
 
 function map = createMap(height, width, numBomb)
@@ -164,18 +180,15 @@ function [gameMap,win] = oneTurn(row, col, gameMap, fullMap)
             win = 0;
             if fullMap(row, col) ~= 0 %Player found information on map
                 gameMap(row, col) = fullMap(row, col);
-                map = gameMap;
             else %Player found a piece of empty land, So all the adjacent empty boxes needs to found
-                map = zeroFinder(row, col, gameMap,fullMap);
+                gameMap = zeroFinder(row, col, gameMap,fullMap);
             end
         else %Player found a mine
             win = 1;
             gameMap(row, col) = fullMap(row, col);
-            map = gameMap;
         end
     else
         win = 0; % the spot is already open or out of bounds
-        map = gameMap;
     end
 end
 
@@ -210,6 +223,12 @@ end
 %% Bots
 function [row,col] = bot_2(gameMap)
     [row,col] = bot_RandomValidGuess(gameMap);
+end
+
+function [row,col] = bot_human(gameMap)
+   gameMap
+   row = input('row?')
+   col = input('col?')
 end
 
 %% Auxillary Functions
