@@ -5,6 +5,7 @@ clc
 % v2.03 - Making MatchLoop more compact
 % v2.04 - Making MatchLoop a function
 % v2.05 - Making MatchLoop a function that can call bots
+% v2.06 - BugFIX - Fixed infinite recursion & logic in zeroFinder
 
 %% Game Information
 % 0  = Empty Area
@@ -26,31 +27,50 @@ height  = 10;                       % variable parameter
 width   = 10;                       % variable parameter
 diff    = 0.2;                      % portion of area that are mines
 matchTime = 2;                      % Single match duration [sec]
+
+%Graph Parameters
+match = 1:numberOfMatches;
+subplot(2,1,1);
+plotMines = plot(match , results(1,:) , match , results(2,:));
+title('Number of mines found in each match');
+legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+subplot(2,1,2);
+plotAvgMines = plot(match , results(3,:) , match , results(4,:));
+title('Average number of mines per turn bots found in each match');
+res_avg_bot_1 = sum(results(3,:))/numberOfMatches;
+res_avg_bot_2 = sum(results(4,:))/numberOfMatches;
+str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
+str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
+legend({str_bot_1,str_bot_2}, 'Interpreter', 'none');
+    
 for gamesPlayed = 1:numberOfMatches
     %% Game parameters
-    height    = height + 1;                     %variable parameter
+    height    = height + 1                     %variable parameter
     width     = width + 1;                      %variable parameter
     bot1Name = 'bot_Chitii_02';
     bot2Name = 'bot_KJ_v0_03_Discoverer';
     
     results (:,gamesPlayed) = engine(height, width, diff, matchTime, bot1Name, bot2Name);
         
+    
+    %% The results
+    
+    
+    
+    plotMines = plot(match , results(1,:) , match , results(2,:));
+    plotAvgMines = plot(match , results(3,:) , match , results(4,:));
+    
+    res_avg_bot_1 = sum(results(3,:))/numberOfMatches;
+    res_avg_bot_2 = sum(results(4,:))/numberOfMatches;
+    str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
+    str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
+    legend({str_bot_1,str_bot_2}, 'Interpreter', 'none');
+    
+    refreshdata
+    drawnow
 end
 
-%% The results
-match = 1:numberOfMatches;
-subplot(2,1,1);
-plot(match , results(1,:) , match , results(2,:));
-title('Number of mines found in each match');
-legend(bot1Name,bot2Name);
-subplot(2,1,2);
-plot(match , results(3,:) , match , results(4,:));
-title('Average number of mines per turn bots found in each match');
-res_avg_bot_1 = sum(results(3,:))/numberOfMatches;
-res_avg_bot_2 = sum(results(4,:))/numberOfMatches;
-str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
-str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
-legend(str_bot_1,str_bot_2);
+
 
 %% Functions for the game
 function results = engine(height, width, diff, matchTime, bot1Name, bot2Name)
@@ -167,15 +187,19 @@ function gameMap = zeroFinder(row, col, gameMap,fullMap)
     ri = max((row-1),1):min((row+1),arrHeight);
     ci = max((col-1),1):min((col+1),arrWidth);
     %Assign
-    oldMap = gameMap;
+    oldSect = gameMap(ri,ci);
     gameMap(ri,ci) = fullMap(ri,ci);
     
-    %Check for new zeros
-    diffMap = oldMap - gameMap;
-    [rz, cz] = find(diffMap==10);
+    %Check for new Zeros
+    diffSect = oldSect - gameMap(ri,ci);
+    [rx, cx] = find(diffSect==10);
+    rz = ri(rx);
+    cz = ci(cx);
     %Recall zeroFinder
     for i = 1 : numel(rz)
-        gameMap = zeroFinder(rz(i), cz(i), gameMap, fullMap);
+        if(rz(i)~=row || cz(i) ~= col)
+            gameMap = zeroFinder(rz(i), cz(i), gameMap, fullMap);
+        end
     end
 end
 
