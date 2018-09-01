@@ -3,6 +3,7 @@ clc
 % v2.01 - Made zeroFinder more efficient / compact
 % v2.02 - Making hiddenMap & createMap more compact
 % v2.03 - Making MatchLoop more compact
+% v2.04 - Making MatchLoop a function
 
 %% Game Information
 % 0  = Empty Area
@@ -28,12 +29,36 @@ for gamesPlayed = 1:numberOfMatches
     %% Game parameters
     height    = height + 1;                     %variable parameter
     width     = width + 1;                      %variable parameter
-    mines     = floor(diff*height*width);       %variable parameter
+    bot1Name = 'bot_Chitii_02';
+    bot2Name = 'bot_KJ_v0_03_Discoverer';
     
+    results (:,gamesPlayed) = engine(height, width, diff, matchTime, bot1Name, bot2Name);
+        
+end
+
+%% The results
+match = 1:numberOfMatches;
+subplot(2,1,1);
+plot(match , results(1,:) , match , results(2,:));
+title('Number of mines found in each match');
+legend(bot1Name,bot2Name);
+subplot(2,1,2);
+plot(match , results(3,:) , match , results(4,:));
+title('Average number of mines per turn bots found in each match');
+res_avg_bot_1 = sum(results(3,:))/numberOfMatches;
+res_avg_bot_2 = sum(results(4,:))/numberOfMatches;
+str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
+str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
+legend(str_bot_1,str_bot_2);
+
+%% Functions for the game
+function results = engine(height, width, diff, matchTime, bot1Name, bot2Name)
+    mines     = floor(diff*height*width);    
     fullMap   = createMap(height , width, mines);% Open this for God Eye's View
     gameMap   = hiddenMap(height , width);
     winner    = 0;
     startTime = cputime;
+    
     %% Player parameters
     bot_1_score = 0;
     bot_2_score = 0;
@@ -41,14 +66,14 @@ for gamesPlayed = 1:numberOfMatches
     bot_2_turnCount = 0;
     
     %% Current match
-    while(~winner && (cputime-startTime) < matchTime)    
+    while(~winner && (cputime-startTime) < matchTime)
         %Player 1's turn
         win = true;
         while(win && ~winner)
             if bot_1_score >= floor(mines/2)
                 winner = 1;
                 break
-            end            
+            end
             [x,y] = bot_Chitii_02(gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_1_turnCount = bot_1_turnCount + 1;
@@ -73,31 +98,15 @@ for gamesPlayed = 1:numberOfMatches
             end
         end
     end
+    
     %% The current match result
     % gameMap
-    results(1,gamesPlayed) = bot_1_score;
-    results(2,gamesPlayed) = bot_2_score;
-    results(3,gamesPlayed) = bot_1_score / bot_1_turnCount;
-    results(4,gamesPlayed) = bot_2_score / bot_2_turnCount;
-    
+    results(1) = bot_1_score;
+    results(2) = bot_2_score;
+    results(3) = bot_1_score / bot_1_turnCount;
+    results(4) = bot_2_score / bot_2_turnCount;
 end
 
-%% The results
-match = 1:numberOfMatches;
-subplot(2,1,1);
-plot(match , results(1,:) , match , results(2,:));
-title('Number of mines found in each match');
-legend('Bot 1','Bot 2');
-subplot(2,1,2);
-plot(match , results(3,:) , match , results(4,:));
-title('Average number of mines per turn bots found in each match');
-res_avg_bot_1 = sum(results(3,:))/numberOfMatches;
-res_avg_bot_2 = sum(results(4,:))/numberOfMatches;
-str_bot_1     = strcat('Bot 1 : ',num2str(res_avg_bot_1));
-str_bot_2     = strcat('Bot 2 : ',num2str(res_avg_bot_2));
-legend(str_bot_1,str_bot_2);
-
-%% Functions for the game
 function map = createMap(height, width, numBomb)
     if numBomb < height*width
         map = zeros(height, width);
@@ -173,4 +182,17 @@ end
 %% Bots
 function [row,col] = bot_2(gameMap)
     [row,col] = bot_RandomValidGuess(gameMap);
+end
+
+%% Auxillary Functions
+function [row, col] = executeStrAsFun(fname, args)
+    try
+        fun = str2func(fname);         % convert string to a function
+        [row, col] = fun(args);           % run the function
+    catch err
+        fprintf('Function: %s\n', err.fname);
+        fprintf('Line: %s\n', err.line);
+        fprintf('Message: %s\n', err.message);
+        results = ['ERROR: Couldn''t run function: ' fname];
+    end
 end
