@@ -10,6 +10,7 @@ clc
 % v2.05 - Making MatchLoop a function that can call bots
 % v2.06 - BugFIX - Fixed infinite recursion & logic in zeroFinder
 % v2.07 - BugFIX - Major fix in oneTurn + updating graphs
+% v2.08 - Feature - Select which AI to battle!
 
 %% Game Information
 % 0  = Empty Area
@@ -25,67 +26,110 @@ clc
 % Current bots are identical and they randomly guess the areas so the game
 % could get stuck in infinite loop [ctrl-c @command window]
 
-numberOfMatches = 100;               % Best of 'Odd numberOfMatches'
-results = zeros(6,numberOfMatches); % Final results
-height  = 10;                       % variable parameter
-width   = 10;                       % variable parameter
+%% Graph Parameters
+numberOfMatches = 25;               % Best of 'Odd numberOfMatches'
 diff    = 0.2;                      % portion of area that are mines
-matchTime = 20;                      % Single match duration [sec]
-bot1Name = 'bot_Chitii_03';
-bot2Name = 'bot_KJ_v0_04_Discoverer';
-
-%Graph Parameters
+matchTime = 10;                      % Single match duration [sec]
 match = 1:numberOfMatches;
 
-subplot(3,1,1);
-plotMines = plot(match , results(1,:) , match , results(2,:));
-title('Number of mines found in each match');
-legend({bot1Name,bot2Name}, 'Interpreter', 'none');
 
-subplot(3,1,2);
-plotTurns = plot(match , results(3,:) , match , results(4,:));
-title('Number of Turns in match');
-legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+%% Gather Competitors
+addpath('C:\Users\Kajendra\Dropbox\Public\MinesweeperFlags Battle\AICage')
+baselineAI = {'bot_RandomValidGuess' 'bot_RandomTile'};
 
-axAvgMines = subplot(3,1,3);
-plotAvgMines = plot(match , results(5,:) , match , results(6,:));
-title('Average number of mines per turn bots found in each match');
+files   = what('MinesweeperFlags Battle/AICage');
+pFiles  = cellfun(@(f) {stripDotM(f)}, files.p)
 
-%Test Animated Line
-figure
-aniPlotMines(1) = animatedline('Color','red');
-aniPlotMines(2) = animatedline('Color','blue');
-legend({bot1Name,bot2Name}, 'Interpreter', 'none');
-title('Number of mines Found in each Match');
-% axis([0,numberOfMatches, 0, (height+numberOfMatches)*(width+numberOfMatches)*diff/2])
-% aniPlotAvgMines = animatedline;
-% axis([0,numberOfMatches, 0, 0.01])
-    
-for gamesPlayed = 1:numberOfMatches
-    %% Game parameters
-    height    = height + 1;                     %variable parameter
-    width     = width + 1;                      %variable parameter
-    results (:,gamesPlayed) = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name);
-        
-    %% The results
-    for player = 1:numel(plotMines)
-        set(plotMines(player), 'YData', results(player, :))
-        set(plotTurns(player), 'YData', results(player+2, :))
-        set(plotAvgMines(player), 'YData', results(player+4, :))
-        
-        addpoints(aniPlotMines(player), gamesPlayed, results(player, gamesPlayed))
-    end
-    
-    %Maybe make a running average in the chart (put this in chart, but this slows stuff down
-    res_avg_bot_1 = sum(results(5,:))/gamesPlayed;
-    res_avg_bot_2 = sum(results(6,:))/gamesPlayed;
-    str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
-    str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
-    legend(axAvgMines, {str_bot_1,str_bot_2}, 'Interpreter', 'none');
+disp('Select list of people to play on the left & then multiple people on the right');
+% If you have only one player on the left, you can select 5 players on the right and your player will face all 5
+% Makes for easier selection instead of battling everyone in list
+% P1 = input('Who would you like to play on the left? E.g [1 2] or [1 3 5]\nEnter array: ');
+% P2 = input('Who would you like to play on the right? E.g [1 2] or [1 3 5]\nEnter array: ');
 
-    refreshdata
-    drawnow
+% Or manual insert
+P1 = [8 5 6];
+P2 = [4 5 6];
+
+if(any(P1 >length(pFiles)) || length(P1)<1 || any(P2 >length(pFiles)) || length(P2)<1)
+   disp('Pick valid players noob\nGoodbye')
+   P1 = [];
 end
+
+competitor_1 = length(P1);
+competitor_2 = length(P2);
+winners_chart = zeros(competitor_1, competitor_2);
+
+for C1 = 1:competitor_1
+    %Include battle against self
+    for C2 = 1:competitor_2
+
+        %Reset Battle Parameters
+        results = zeros(6,numberOfMatches); % Final results
+        height  = 10;                       % variable parameter
+        width   = 10;                       % variable parameter
+        %Select competitors
+        bot1Name = pFiles{P1(C1)};
+        bot2Name = pFiles{P2(C2)};
+        
+        figure
+        axPlotMines = subplot(3,1,1);
+        plotMines = plot(match , results(1,:) , match , results(2,:));
+        title('Number of mines found in each match');
+        legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+        
+        subplot(3,1,2);
+        plotTurns = plot(match , results(3,:) , match , results(4,:));
+        title('Number of Turns in match');
+        legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+        
+        axAvgMines = subplot(3,1,3);
+        plotAvgMines = plot(match , results(5,:) , match , results(6,:));
+        title('Average number of mines per turn bots found in each match');
+        
+        %Test Animated Line
+%         figure
+%         aniPlotMines(1) = animatedline('Color','red');
+%         aniPlotMines(2) = animatedline('Color','blue');
+%         legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+%         title('Number of mines Found in each Match');
+        
+        for gamesPlayed = 1:numberOfMatches
+            %% Game parameters
+            height    = height + 1;                     %variable parameter
+            width     = width + 1;                      %variable parameter
+            results (:,gamesPlayed) = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name);
+            
+            %% The results
+            for player = 1:numel(plotMines)
+                set(plotMines(player), 'YData', results(player, :))
+                set(plotTurns(player), 'YData', results(player+2, :))
+                set(plotAvgMines(player), 'YData', results(player+4, :))
+                
+%                 addpoints(aniPlotMines(player), gamesPlayed, results(player, gamesPlayed))
+            end
+            
+            %Maybe make a running average in the chart (put this in chart, but this slows stuff down
+            res_avg_bot_1 = sum(results(5,:))/gamesPlayed;
+            res_avg_bot_2 = sum(results(6,:))/gamesPlayed;
+            str_bot_1     = strcat(bot1Name,' : ',num2str(res_avg_bot_1));
+            str_bot_2     = strcat(bot2Name, ' : ',num2str(res_avg_bot_2));
+            legend(axAvgMines, {str_bot_1,str_bot_2}, 'Interpreter', 'none');
+            
+            refreshdata
+            drawnow
+        end
+        
+        %After trials, add up wins
+        P1_win_over_P2 = sum(results(1,:) - results(2,:)>0);
+        P2_win_over_P1 = sum(results(2,:) - results(1,:)>0);
+        winners_chart(C1, C2) = P1_win_over_P2 - P2_win_over_P1;
+        
+    end
+    %Finished with P1, now compare next player against all others
+end
+rowNames = pFiles(P1);
+colNames = pFiles(P2);
+sTable = array2table(winners_chart,'RowNames',rowNames,'VariableNames',colNames)
 
 %% Functions for the game
 function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name)
@@ -216,15 +260,6 @@ function gameMap = zeroFinder(row, col, gameMap,fullMap)
     end
 end
 
-%% Bots
-function [row,col] = bot_1(gameMap)
-    [row,col] = bot_RandomValidGuess(gameMap);
-end
-%% Bots
-function [row,col] = bot_2(gameMap)
-    [row,col] = bot_RandomValidGuess(gameMap);
-end
-
 function [row,col] = bot_human(gameMap)
    gameMap
    row = input('row?')
@@ -243,4 +278,8 @@ function [row, col] = executeStrAsFun(fname, args)
         error(err)
         %results = ['ERROR: Couldn''t run function: ' fname];
     end
+end
+
+function name = stripDotM (filename)
+    [pathstr, name, ext] = fileparts(filename);
 end
