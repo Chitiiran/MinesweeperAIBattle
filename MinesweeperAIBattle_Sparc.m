@@ -2,6 +2,7 @@ clc
 %% Changelog
 % v2.01 - Made zeroFinder more efficient / compact
 % v2.02 - Making hiddenMap & createMap more compact
+% v2.03 - Making MatchLoop more compact
 
 %% Game Information
 % 0  = Empty Area
@@ -40,36 +41,36 @@ for gamesPlayed = 1:numberOfMatches
     bot_2_turnCount = 0;
     
     %% Current match
-    while(~winner && (cputime-startTime) < matchTime)
+    while(~winner && (cputime-startTime) < matchTime)    
         %Player 1's turn
-        [x,y] = bot_Chitii_02(gameMap);
-        [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
-        bot_1_turnCount = bot_1_turnCount + 1;
+        win = true;
         while(win && ~winner)
-            %bot_1 gets a bonus turn
-            bot_1_score = bot_1_score + 1;
             if bot_1_score >= floor(mines/2)
                 winner = 1;
-            end
+                break
+            end            
             [x,y] = bot_Chitii_02(gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_1_turnCount = bot_1_turnCount + 1;
+            if(win)
+                %bot_1 gets a bonus turn
+                bot_1_score = bot_1_score + 1;
+            end
         end
-        
         %Player 2's turn
-        [x,y] = bot_KJ_v0_02_Invalidator(gameMap);
-        [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
-        bot_2_turnCount = bot_2_turnCount + 1;
-        
-        while(win  && ~winner)
-            %bot_2 gets a bonus turn
-            bot_2_score = bot_2_score + 1;
+        win = true;
+        while(win && ~winner)
             if bot_2_score >= floor(mines/2)
                 winner = 1;
+                break
             end
             [x,y] = bot_KJ_v0_02_Invalidator(gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_2_turnCount = bot_2_turnCount + 1;
+            if(win)
+                %bot_2 gets a bonus turn
+                bot_2_score = bot_2_score + 1;
+            end
         end
     end
     %% The current match result
