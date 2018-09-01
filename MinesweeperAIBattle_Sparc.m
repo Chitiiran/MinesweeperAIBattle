@@ -4,6 +4,7 @@ clc
 % v2.02 - Making hiddenMap & createMap more compact
 % v2.03 - Making MatchLoop more compact
 % v2.04 - Making MatchLoop a function
+% v2.05 - Making MatchLoop a function that can call bots
 
 %% Game Information
 % 0  = Empty Area
@@ -74,7 +75,8 @@ function results = engine(height, width, diff, matchTime, bot1Name, bot2Name)
                 winner = 1;
                 break
             end
-            [x,y] = bot_Chitii_02(gameMap);
+            
+            [x,y] = executeStrAsFun(bot1Name, gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_1_turnCount = bot_1_turnCount + 1;
             if(win)
@@ -89,7 +91,7 @@ function results = engine(height, width, diff, matchTime, bot1Name, bot2Name)
                 winner = 1;
                 break
             end
-            [x,y] = bot_KJ_v0_02_Invalidator(gameMap);
+            [x,y] = executeStrAsFun(bot2Name, gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_2_turnCount = bot_2_turnCount + 1;
             if(win)
@@ -119,8 +121,8 @@ function map = createMap(height, width, numBomb)
             
             for i = 1:numel(r_mine)
                 %Find valid indicies
-                ri = max((r_mine(i)-1),1):min((r_mine(i)+1),arrHeight);
-                ci = max((c_mine(i)-1),1):min((c_mine(i)+1),arrWidth);
+                ri = max((r_mine(i)-1),1):min((r_mine(i)+1),height);
+                ci = max((c_mine(i)-1),1):min((c_mine(i)+1),width);
                 %Increment adjacent tiles
                 map(ri,ci) = map(ri,ci) + 1;               
             end
@@ -135,7 +137,7 @@ function map = hiddenMap(height, width)
     map = zeros(height , width) + 10;
 end
 
-function [map,win] = oneTurn(row, col, gameMap, fullMap)
+function [gameMap,win] = oneTurn(row, col, gameMap, fullMap)
     [arrHeight, arrWidth] = size(gameMap);
     if (row > 0 && row <= arrHeight && col > 0 && col <=arrWidth && gameMap(row,col) == 10)
         if fullMap(row, col) ~=9 %Player didnt find the bomb doesnt get extra turn
@@ -157,21 +159,23 @@ function [map,win] = oneTurn(row, col, gameMap, fullMap)
     end
 end
 
-function map = zeroFinder(row, col, gameMap,fullMap)
+function gameMap = zeroFinder(row, col, gameMap,fullMap)
     [arrHeight, arrWidth] = size(gameMap);
     gameMap(row,col) = fullMap(row,col);
-    map = gameMap;
     
     %Find valid indicies
     ri = max((row-1),1):min((row+1),arrHeight);
     ci = max((col-1),1):min((col+1),arrWidth);
     %Assign
-    map(ri,ci) = fullMap(ri,ci);
-    %Check for more zeros
-    [rx, cx] = find(map(ri,ci)==0);
+    oldMap = gameMap;
+    gameMap(ri,ci) = fullMap(ri,ci);
+    
+    %Check for new zeros
+    diffMap = oldMap - gameMap;
+    [rz, cz] = find(diffMap==10);
     %Recall zeroFinder
-    for i = 1 : numel(rx)
-        map = zeroFinder(rx(i), cx(i), map,fullMap);
+    for i = 1 : numel(rz)
+        gameMap = zeroFinder(rz(i), cz(i), gameMap, fullMap);
     end
 end
 
@@ -190,9 +194,10 @@ function [row, col] = executeStrAsFun(fname, args)
         fun = str2func(fname);         % convert string to a function
         [row, col] = fun(args);           % run the function
     catch err
-        fprintf('Function: %s\n', err.fname);
-        fprintf('Line: %s\n', err.line);
+        fprintf('Function: %s\n', fname);
         fprintf('Message: %s\n', err.message);
-        results = ['ERROR: Couldn''t run function: ' fname];
+        struct2table(err.stack, 'AsArray', true)
+        error(err)
+        %results = ['ERROR: Couldn''t run function: ' fname];
     end
 end
