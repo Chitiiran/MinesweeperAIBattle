@@ -1,6 +1,7 @@
 clc
 %% Changelog
-% v2.01 - Made zeroFinder more efficient
+% v2.01 - Made zeroFinder more efficient / compact
+% v2.02 - Making hiddenMap & createMap more compact
 
 %% Game Information
 % 0  = Empty Area
@@ -41,7 +42,7 @@ for gamesPlayed = 1:numberOfMatches
     %% Current match
     while(~winner && (cputime-startTime) < matchTime)
         %Player 1's turn
-        [x,y] = bot_Chitii_01(gameMap);
+        [x,y] = bot_Chitii_02(gameMap);
         [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
         bot_1_turnCount = bot_1_turnCount + 1;
         while(win && ~winner)
@@ -50,13 +51,13 @@ for gamesPlayed = 1:numberOfMatches
             if bot_1_score >= floor(mines/2)
                 winner = 1;
             end
-            [x,y] = bot_Chitii_01(gameMap);
+            [x,y] = bot_Chitii_02(gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_1_turnCount = bot_1_turnCount + 1;
         end
         
         %Player 2's turn
-        [x,y] = bot_KJ_v0_02(gameMap);
+        [x,y] = bot_KJ_v0_02_Invalidator(gameMap);
         [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
         bot_2_turnCount = bot_2_turnCount + 1;
         
@@ -66,7 +67,7 @@ for gamesPlayed = 1:numberOfMatches
             if bot_2_score >= floor(mines/2)
                 winner = 1;
             end
-            [x,y] = bot_KJ_v0_02(gameMap);
+            [x,y] = bot_KJ_v0_02_Invalidator(gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
             bot_2_turnCount = bot_2_turnCount + 1;
         end
@@ -100,48 +101,30 @@ function map = createMap(height, width, numBomb)
     if numBomb < height*width
         map = zeros(height, width);
         if numBomb > 0
-            while(numBomb) %Place some bomb in place
-                x = randi(width,1);
-                y = randi(height,1);
-                if (map(y,x) ~= 9)
-                    map(y,x) = 9;
-                    numBomb = numBomb - 1;
-                end
+            %Find random indicies to place mines and set them
+            mine_idx = randperm(numel(map), numBomb);
+            map(mine_idx) = 9;
+            
+            [r_mine, c_mine] = find(map==9);
+            
+            for i = 1:numel(r_mine)
+                %Find valid indicies
+                ri = max((r_mine(i)-1),1):min((r_mine(i)+1),arrHeight);
+                ci = max((c_mine(i)-1),1):min((c_mine(i)+1),arrWidth);
+                %Increment adjacent tiles
+                map(ri,ci) = map(ri,ci) + 1;               
             end
             
-            for x = 1 : (width) %Find the mines
-                for y = 1: (height)
-                    if (map(y,x) == 9)
-                        %Count surrounding bombs (9)
-                        for i = x-1:x+1 %populating the array with numbers
-                            for j = y-1:y+1
-                                if (i~=x || j~=y)
-                                    if (i>=1 && i<=width && j>=1 && j<=height)% boundary conditions
-                                        if map(j,i) ~= 9
-                                            map(j,i) = map(j,i)+1;
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    else
-                        %do nothing
-                    end
-                end
-            end
+            %Reset Mines to 9
+            map(mine_idx) = 9;
         end
-    else
-        ones(height,width);
     end
 end
+
 function map = hiddenMap(height, width)
-    map = zeros(height , width);
-    for x = 1:width
-        for y = 1:height
-            map(y,x) = 10;
-        end
-    end
+    map = zeros(height , width) + 10;
 end
+
 function [map,win] = oneTurn(row, col, gameMap, fullMap)
     [arrHeight, arrWidth] = size(gameMap);
     if (row > 0 && row <= arrHeight && col > 0 && col <=arrWidth && gameMap(row,col) == 10)
@@ -151,8 +134,6 @@ function [map,win] = oneTurn(row, col, gameMap, fullMap)
                 gameMap(row, col) = fullMap(row, col);
                 map = gameMap;
             else %Player found a piece of empty land, So all the adjacent empty boxes needs to found
-                %             fprintf('found a zero\n');
-                %             gameMap(row,col) = fullMap(row,col);
                 map = zeroFinder(row, col, gameMap,fullMap);
             end
         else %Player found a mine
@@ -186,49 +167,9 @@ end
 
 %% Bots
 function [row,col] = bot_1(gameMap)
-    checksquare=0;
-    [arrHeight, arrWidth] = size(gameMap);
-    
-    if sum(sum(gameMap))==(10*(arrHeight*arrWidth));
-        [arrHeight, arrWidth] = size(gameMap);
-        row = randi(arrHeight,1);
-        col = randi(arrWidth,1);
-        
-    else
-        
-        % 0  = Empty Area
-        % 9  = Detected mines
-        % 10 = Hidden/Locked area
-        % other numbers works like minesweeper
-        
-        %{
-get all 10 areas
-go look at all 10 areas and sum up numbers (that aren't 10)
-find spot with largest number
-pick that spot
-        %}
-        
-        % find all 10 locations
-        modgameMap=padarray(gameMap,[1,1],0);
-        [row10,col10]=find(modgameMap==10);
-        
-        
-        for i=1:length(row10)
-            %make a square around each 10
-            rowvec=((row10(i)-1)):(row10(i)+1);
-            colvec=((col10(i)-1)):(col10(i)+1);
-            %checksquare(i)=sum(sum(abs(gameMap((((row10(i)-(row10(i)-3)):(row10(i)+(row10(i)+3))),((col10(i)-(col10(i)+3)):(col10(i)+(col10(i)+3)))))-10)));
-            checksquare(i)=sum(sum(abs(modgameMap(rowvec,colvec))));
-        end
-        
-        
-        xc=find(checksquare==max(checksquare),1);
-        
-        
-        row=row10(xc)-1;
-        col=col10(xc)-1;
-        
-        
-        
-    end
+    [row,col] = bot_RandomValidGuess(gameMap);
+end
+%% Bots
+function [row,col] = bot_2(gameMap)
+    [row,col] = bot_RandomValidGuess(gameMap);
 end
