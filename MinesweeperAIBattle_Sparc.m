@@ -11,6 +11,7 @@ clc
 % v2.06 - BugFIX - Fixed infinite recursion & logic in zeroFinder
 % v2.07 - BugFIX - Major fix in oneTurn + updating graphs
 % v2.08 - Feature - Select which AI to battle!
+% v3.00 - Cleaned and tested for battle!!!
 
 %% Game Information
 % 0  = Empty Area
@@ -27,33 +28,33 @@ clc
 % could get stuck in infinite loop [ctrl-c @command window]
 
 %% Graph Parameters
-numberOfMatches = 25;               % Best of 'Odd numberOfMatches'
+numberOfMatches = 10;               % Best of 'Odd numberOfMatches'
 diff    = 0.2;                      % portion of area that are mines
 matchTime = 10;                      % Single match duration [sec]
 match = 1:numberOfMatches;
 
 
 %% Gather Competitors
-addpath('C:\Users\Kajendra\Dropbox\Public\MinesweeperFlags Battle\AICage')
-baselineAI = {'bot_RandomValidGuess' 'bot_RandomTile'};
+% addpath('C:\Users\Kajendra\Dropbox\Public\MinesweeperFlags Battle\AICage')
 
 files   = what('MinesweeperFlags Battle/AICage');
+% files   = what();
 pFiles  = cellfun(@(f) {stripDotM(f)}, files.p)
 
 disp('Select list of people to play on the left & then multiple people on the right');
 % If you have only one player on the left, you can select 5 players on the right and your player will face all 5
 % Makes for easier selection instead of battling everyone in list
-% P1 = input('Who would you like to play on the left? E.g [1 2] or [1 3 5]\nEnter array: ');
-% P2 = input('Who would you like to play on the right? E.g [1 2] or [1 3 5]\nEnter array: ');
+P1 = input('Who would you like to play on the left? E.g [1 2] or [1 3 5]\nEnter array: ');
+P2 = input('Who would you like to play on the right? E.g [1 2] or [1 3 5]\nEnter array: ');
 
 % Or manual insert
-P1 = [8 5 6];
-P2 = [4 5 6];
+% P1 = [7];
+% P2 = [4 5 6];
 
-if(any(P1 >length(pFiles)) || length(P1)<1 || any(P2 >length(pFiles)) || length(P2)<1)
-   disp('Pick valid players noob\nGoodbye')
-   P1 = [];
-end
+% if(any(P1 >length(pFiles)) || length(P1)<1 || any(P2 >length(pFiles)) || length(P2)<1)
+%    disp('Pick valid players noob\nGoodbye')
+%    P1 = [];
+% end
 
 competitor_1 = length(P1);
 competitor_2 = length(P2);
@@ -62,12 +63,15 @@ winners_chart = zeros(competitor_1, competitor_2);
 for C1 = 1:competitor_1
     %Include battle against self
     for C2 = 1:competitor_2
-
+        
         %Reset Battle Parameters
         results = zeros(6,numberOfMatches); % Final results
         height  = 10;                       % variable parameter
         width   = 10;                       % variable parameter
         %Select competitors
+%         bot1Name = 'bot_KJ_v0_05_Probabalator';%pFiles{P1(C1)};
+%         bot2Name = 'bot_KJ_v0_04_Discoverer';%pFiles{P2(C2)};
+        
         bot1Name = pFiles{P1(C1)};
         bot2Name = pFiles{P2(C2)};
         
@@ -87,11 +91,11 @@ for C1 = 1:competitor_1
         title('Average number of mines per turn bots found in each match');
         
         %Test Animated Line
-%         figure
-%         aniPlotMines(1) = animatedline('Color','red');
-%         aniPlotMines(2) = animatedline('Color','blue');
-%         legend({bot1Name,bot2Name}, 'Interpreter', 'none');
-%         title('Number of mines Found in each Match');
+        %         figure
+        %         aniPlotMines(1) = animatedline('Color','red');
+        %         aniPlotMines(2) = animatedline('Color','blue');
+        %         legend({bot1Name,bot2Name}, 'Interpreter', 'none');
+        %         title('Number of mines Found in each Match');
         
         for gamesPlayed = 1:numberOfMatches
             %% Game parameters
@@ -105,7 +109,7 @@ for C1 = 1:competitor_1
                 set(plotTurns(player), 'YData', results(player+2, :))
                 set(plotAvgMines(player), 'YData', results(player+4, :))
                 
-%                 addpoints(aniPlotMines(player), gamesPlayed, results(player, gamesPlayed))
+                %                 addpoints(aniPlotMines(player), gamesPlayed, results(player, gamesPlayed))
             end
             
             %Maybe make a running average in the chart (put this in chart, but this slows stuff down
@@ -133,11 +137,12 @@ sTable = array2table(winners_chart,'RowNames',rowNames,'VariableNames',colNames)
 
 %% Functions for the game
 function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name)
-    mines     = floor(diff*height*width);    
+    mines     = floor(diff*height*width);
     fullMap   = createMap(height , width, mines);% Open this for God Eye's View
     gameMap   = hiddenMap(height , width);
     winner    = 0;
     startTime = cputime;
+    maxMatchTurns = height * width;
     
     %% Player parameters
     bot_1_score = 0;
@@ -204,7 +209,7 @@ function map = createMap(height, width, numBomb)
                 ri = max((r_mine(i)-1),1):min((r_mine(i)+1),height);
                 ci = max((c_mine(i)-1),1):min((c_mine(i)+1),width);
                 %Increment adjacent tiles
-                map(ri,ci) = map(ri,ci) + 1;               
+                map(ri,ci) = map(ri,ci) + 1;
             end
             
             %Reset Mines to 9
@@ -261,9 +266,9 @@ function gameMap = zeroFinder(row, col, gameMap,fullMap)
 end
 
 function [row,col] = bot_human(gameMap)
-   gameMap
-   row = input('row?')
-   col = input('col?')
+    gameMap
+    row = input('row?')
+    col = input('col?')
 end
 
 %% Auxillary Functions
