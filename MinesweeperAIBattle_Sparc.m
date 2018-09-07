@@ -12,6 +12,7 @@ clc
 % v2.07 - BugFIX - Major fix in oneTurn + updating graphs
 % v2.08 - Feature - Select which AI to battle!
 % v3.00 - Cleaned and tested for battle!!!
+% v3.01 - Added numbers to list & Turn Count limit instead of Time Limit
 
 %% Game Information
 % 0  = Empty Area
@@ -28,7 +29,7 @@ clc
 % could get stuck in infinite loop [ctrl-c @command window]
 
 %% Graph Parameters
-numberOfMatches = 10;               % Best of 'Odd numberOfMatches'
+numberOfMatches = 20;               % Best of 'Odd numberOfMatches'
 diff    = 0.2;                      % portion of area that are mines
 matchTime = 10;                      % Single match duration [sec]
 match = 1:numberOfMatches;
@@ -40,6 +41,10 @@ match = 1:numberOfMatches;
 files   = what('MinesweeperFlags Battle/AICage');
 % files   = what();
 pFiles  = cellfun(@(f) {stripDotM(f)}, files.p)
+
+for file = 1:length(pFiles)
+    fprintf('%i.\t %s\n', file, string(pFiles(file)))
+end
 
 disp('Select list of people to play on the left & then multiple people on the right');
 % If you have only one player on the left, you can select 5 players on the right and your player will face all 5
@@ -151,7 +156,7 @@ function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name
     bot_2_turnCount = 0;
     
     %% Current match
-    while(~winner && (cputime-startTime) < matchTime)
+    while(~winner && (bot_1_turnCount+bot_2_turnCount) < maxMatchTurns)
         %Player 1's turn
         win = true;
         while(win && ~winner)
