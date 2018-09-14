@@ -13,6 +13,7 @@ clc
 % v2.08 - Feature - Select which AI to battle!
 % v3.00 - Cleaned and tested for battle!!!
 % v3.01 - Added numbers to list & Turn Count limit instead of Time Limit
+% v3.02 - Engine corrects any invalid guess to a random guess
 
 %% Game Information
 % 0  = Empty Area
@@ -40,7 +41,7 @@ match = 1:numberOfMatches;
 
 files   = what('MinesweeperFlags Battle/AICage');
 % files   = what();
-pFiles  = cellfun(@(f) {stripDotM(f)}, files.p)
+pFiles  = cellfun(@(f) {stripDotM(f)}, files.p);
 
 for file = 1:length(pFiles)
     fprintf('%i.\t %s\n', file, string(pFiles(file)))
@@ -165,7 +166,7 @@ function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name
                 break
             end
             [x,y] = executeStrAsFun(bot1Name, gameMap);
-            [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
+            [gameMap,win] = oneTurn(x, y, gameMap, fullMap, bot1Name);
             bot_1_turnCount = bot_1_turnCount + 1;
             if(win)
                 %bot_1 gets a bonus turn
@@ -180,7 +181,7 @@ function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name
                 break
             end
             [x,y] = executeStrAsFun(bot2Name, gameMap);
-            [gameMap,win] = oneTurn(x, y, gameMap, fullMap);
+            [gameMap,win] = oneTurn(x, y, gameMap, fullMap, bot2Name);
             bot_2_turnCount = bot_2_turnCount + 1;
             if(win)
                 %bot_2 gets a bonus turn
@@ -227,22 +228,33 @@ function map = hiddenMap(height, width)
     map = zeros(height , width) + 10;
 end
 
-function [gameMap,win] = oneTurn(row, col, gameMap, fullMap)
+function [gameMap,win] = oneTurn(row, col, gameMap, fullMap, botName)
     [arrHeight, arrWidth] = size(gameMap);
-    if (row > 0 && row <= arrHeight && col > 0 && col <=arrWidth && gameMap(row,col) == 10)
-        if fullMap(row, col) ~=9 %Player didnt find the bomb doesnt get extra turn
-            win = 0;
-            if fullMap(row, col) ~= 0 %Player found information on map
-                gameMap(row, col) = fullMap(row, col);
-            else %Player found a piece of empty land, So all the adjacent empty boxes needs to found
-                gameMap = zeroFinder(row, col, gameMap,fullMap);
+    if ~(row > 0 && row <= arrHeight && col > 0 && col <=arrWidth && gameMap(row,col) == 10)
+        guessInvalid = true;    %Set initial condition
+        fprintf('%s is making invalid moves!\n', botName);
+        while(guessInvalid)
+            % Choose random points
+            row = randi(arrHeight,1);
+            col = randi(arrWidth,1);
+            
+            %Check if this is a valid guess (check if this tile is a 10
+            if gameMap(row,col) == 10
+                %Exit the loop
+                guessInvalid = false;
             end
-        else %Player found a mine
-            win = 1;
-            gameMap(row, col) = fullMap(row, col);
         end
-    else
-        win = 0; % the spot is already open or out of bounds
+    end
+    if fullMap(row, col) ~=9 %Player didnt find the bomb doesnt get extra turn
+        win = 0;
+        if fullMap(row, col) ~= 0 %Player found information on map
+            gameMap(row, col) = fullMap(row, col);
+        else %Player found a piece of empty land, So all the adjacent empty boxes needs to found
+            gameMap = zeroFinder(row, col, gameMap,fullMap);
+        end
+    else %Player found a mine
+        win = 1;
+        gameMap(row, col) = fullMap(row, col);
     end
 end
 
