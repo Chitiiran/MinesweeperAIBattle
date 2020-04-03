@@ -54,4 +54,4 @@ bot_Chitii_02 | random guesses subsequent tiles to provide baseline to compare f
 bot_Chitii_03 | Calculates the probability of mines for tiles immediately (Horizontal) beside uncovered tiles
 bot_Chitii_04 | Calculates the probability of mines for tiles (Vertical & diagonal) beside uncovered tiles
 bot_Chitii_05 | Mines probability map computed for different clusters and combined
-bot_Chitii_06 | Chooses tile near uncover area when similar probabilities exist
+bot_Chitii_06 | Chooses tile closer to more uncovered tiles when similar probabilities exist
