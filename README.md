@@ -55,3 +55,7 @@ bot_Chitii_03 | Calculates the probability of mines for tiles immediately (Horiz
 bot_Chitii_04 | Calculates the probability of mines for tiles (Vertical & diagonal) beside uncovered tiles
 bot_Chitii_05 | Mines probability map computed for different clusters and combined
 bot_Chitii_06 | Chooses tile closer to more uncovered tiles when similar probabilities exist
+
+## Results
+The battle between two AI's in an arena is shown in following metrics
+![](/Example%20Results.png)
