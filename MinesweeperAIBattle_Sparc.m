@@ -3,17 +3,17 @@ close all
 clc
 
 %% Changelog
-% v2.01 - Made zeroFinder more efficient / compact
-% v2.02 - Making hiddenMap & createMap more compact
-% v2.03 - Making MatchLoop more compact
-% v2.04 - Making MatchLoop a function
-% v2.05 - Making MatchLoop a function that can call bots
-% v2.06 - BugFIX - Fixed infinite recursion & logic in zeroFinder
-% v2.07 - BugFIX - Major fix in oneTurn + updating graphs
-% v2.08 - Feature - Select which AI to battle!
-% v3.00 - Cleaned and tested for battle!!!
-% v3.01 - Added numbers to list & Turn Count limit instead of Time Limit
-% v3.02 - Engine corrects any invalid guess to a random guess
+												  
+												   
+									   
+									 
+														
+																 
+														 
+											  
+										  
+																		
+															 
 
 %% Game Information
 % 0  = Empty Area
@@ -37,9 +37,12 @@ match = 1:numberOfMatches;
 
 
 %% Gather Competitors
-% addpath('C:\Users\Kajendra\Dropbox\Public\MinesweeperFlags Battle\AICage')
+% Determine where your m-file's folder is.
+folder = fileparts(which(mfilename)); 
+% Add that folder plus all subfolders to the path.
+addpath(genpath(folder));
 
-files   = what('MinesweeperFlags Battle/AICage');
+files   = what('MinesweeperAIBattle/AICage');
 % files   = what();
 pFiles  = cellfun(@(f) {stripDotM(f)}, files.p);
 
@@ -75,8 +78,9 @@ for C1 = 1:competitor_1
         height  = 10;                       % variable parameter
         width   = 10;                       % variable parameter
         %Select competitors
-%         bot1Name = 'bot_KJ_v0_05_Probabalator';%pFiles{P1(C1)};
-%         bot2Name = 'bot_KJ_v0_04_Discoverer';%pFiles{P2(C2)};
+%		Hard Code Bot Selection
+%		bot1Name = 'bot_KJ_v0_05_Probabalator';%pFiles{P1(C1)};
+%       bot2Name = 'bot_KJ_v0_04_Discoverer';%pFiles{P2(C2)};
         
         bot1Name = pFiles{P1(C1)};
         bot2Name = pFiles{P2(C2)};
@@ -115,7 +119,7 @@ for C1 = 1:competitor_1
                 set(plotTurns(player), 'YData', results(player+2, :))
                 set(plotAvgMines(player), 'YData', results(player+4, :))
                 
-                %                 addpoints(aniPlotMines(player), gamesPlayed, results(player, gamesPlayed))
+                %addpoints(aniPlotMines(player), gamesPlayed, results(player, gamesPlayed))
             end
             
             %Maybe make a running average in the chart (put this in chart, but this slows stuff down
@@ -165,7 +169,7 @@ function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name
                 winner = 1;
                 break
             end
-            [x,y] = executeStrAsFun(bot1Name, gameMap);
+            [x,y] = executeStrAsFunction(bot1Name, gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap, bot1Name);
             bot_1_turnCount = bot_1_turnCount + 1;
             if(win)
@@ -180,7 +184,7 @@ function results = gameEngine(height, width, diff, matchTime, bot1Name, bot2Name
                 winner = 1;
                 break
             end
-            [x,y] = executeStrAsFun(bot2Name, gameMap);
+            [x,y] = executeStrAsFunction(bot2Name, gameMap);
             [gameMap,win] = oneTurn(x, y, gameMap, fullMap, bot2Name);
             bot_2_turnCount = bot_2_turnCount + 1;
             if(win)
@@ -289,7 +293,7 @@ function [row,col] = bot_human(gameMap)
 end
 
 %% Auxillary Functions
-function [row, col] = executeStrAsFun(fname, args)
+function [row, col] = executeStrAsFunction(fname, args)
     try
         fun = str2func(fname);         % convert string to a function
         [row, col] = fun(args);           % run the function
