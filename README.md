@@ -43,3 +43,15 @@ bot_KJ_v0_06_Probabalator |
 bot_KJ_v0_07_Sniper | Targets known mines and will determine probabilities for the best mine and choose that next. If the highest probability mine is too low, then choose a mine that won't give too much information
 bot_KJ_v0_071_Sniper |
 bot_KJ_v0_08_Zilcher |
+
+## Chitiiran's Bots
+These bots builds on skill-set of previous bot.
+
+Name | Description
+--- | ---
+bot_Chitii_01 | randomly picks the first tile to start the game
+bot_Chitii_02 | random guesses subsequent tiles to provide baseline to compare future bot's performance
+bot_Chitii_03 | Calculates the probability of mines for tiles immediately (Horizontal) beside uncovered tiles
+bot_Chitii_04 | Calculates the probability of mines for tiles (Vertical & diagonal) beside uncovered tiles
+bot_Chitii_05 | Mines probability map computed for different clusters and combined
+bot_Chitii_06 | Chooses tile closer to more uncovered tiles when similar probabilities exist
